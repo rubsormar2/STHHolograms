@@ -57,12 +57,12 @@ PROGRESS_UPDATE_INTERVAL = 25
 # VALIDACIONES
 # ============================================================
 
-def validate_quantity(quantity):
+def validar_cantidad(cantidad):
     """
     Valida que la cantidad solicitada sea un número entero positivo.
 
     Args:
-        quantity (int): cantidad solicitada.
+        cantidad (int): cantidad solicitada.
 
     Returns:
         int: cantidad validada.
@@ -70,16 +70,16 @@ def validate_quantity(quantity):
     Raises:
         ValueError: si la cantidad no es válida.
     """
-    if not isinstance(quantity, int):
+    if not isinstance(cantidad, int):
         raise ValueError("La cantidad debe ser un número entero.")
 
-    if quantity <= 0:
+    if cantidad <= 0:
         raise ValueError("La cantidad debe ser mayor que 0.")
 
-    return quantity
+    return cantidad
 
 
-def validate_prefix(prefix):
+def validar_prefijo(prefijo):
     """
     Valida y normaliza el prefijo.
 
@@ -90,7 +90,7 @@ def validate_prefix(prefix):
     - No puede superar la longitud máxima configurada.
 
     Args:
-        prefix (str): prefijo escrito por el usuario.
+        prefijo (str): prefijo escrito por el usuario.
 
     Returns:
         str: prefijo validado.
@@ -98,10 +98,10 @@ def validate_prefix(prefix):
     Raises:
         ValueError: si el prefijo no es válido.
     """
-    if not isinstance(prefix, str):
+    if not isinstance(prefijo, str):
         raise ValueError("El prefijo debe ser texto.")
 
-    validated_prefix = prefix.strip().upper()
+    validated_prefix = prefijo.strip().upper()
 
     if not validated_prefix:
         raise ValueError("El prefijo no puede estar vacío.")
@@ -124,7 +124,7 @@ def validate_prefix(prefix):
 # GENERACIÓN DE CÓDIGOS
 # ============================================================
 
-def get_current_timestamp():
+def obtener_timestamp_actual():
     """
     Obtiene el timestamp actual con precisión de milisegundos.
 
@@ -137,15 +137,15 @@ def get_current_timestamp():
     Returns:
         str: timestamp de 17 dígitos.
     """
-    current_time = datetime.datetime.now()
+    tiempo_actual = datetime.datetime.now()
 
-    date_and_time = current_time.strftime("%Y%m%d%H%M%S")
-    milliseconds = current_time.microsecond // 1000
+    fecha_hora = tiempo_actual.strftime("%Y%m%d%H%M%S")
+    milisegundos = tiempo_actual.microsecond // 1000
 
-    return f"{date_and_time}{milliseconds:03d}"
+    return f"{fecha_hora}{milisegundos:03d}"
 
 
-def generate_unique_number(prefix, last_timestamp=None):
+def generar_numero_unico(prefijo, ultimo_timestamp=None):
     """
     Genera un código único utilizando el prefijo y el reloj del sistema.
 
@@ -153,8 +153,8 @@ def generate_unique_number(prefix, last_timestamp=None):
     que el reloj alcance un milisegundo posterior.
 
     Args:
-        prefix (str): prefijo validado.
-        last_timestamp (str | None): último timestamp utilizado.
+        prefijo (str): prefijo validado.
+        ultimo_timestamp (str | None): último timestamp utilizado.
 
     Returns:
         tuple[str, str]:
@@ -162,75 +162,75 @@ def generate_unique_number(prefix, last_timestamp=None):
             - Timestamp utilizado, sin el prefijo.
     """
     while True:
-        current_timestamp = get_current_timestamp()
+        timestamp_actual = obtener_timestamp_actual()
 
         if (
-            last_timestamp is None
-            or current_timestamp > last_timestamp
+            ultimo_timestamp is None
+            or timestamp_actual > ultimo_timestamp
         ):
-            complete_code = f"{prefix}{current_timestamp}"
+            complete_code = f"{prefijo}{timestamp_actual}"
 
-            return complete_code, current_timestamp
+            return complete_code, timestamp_actual
 
         # Se vuelve a consultar el reloj hasta que cambie
         # el milisegundo.
         time.sleep(0.0001)
 
 
-def generate_unique_numbers(
-    quantity,
-    prefix,
+def generar_numeros_unicos(
+    cantidad,
+    prefijo,
     progress_callback=None,
 ):
     """
     Genera una lista completa de códigos únicos.
 
-    La variable last_timestamp se mantiene durante toda la generación.
+    La variable ultimo_timestamp se mantiene durante toda la generación.
     Por tanto, la posterior división en archivos no reinicia el
     timestamp ni afecta a la unicidad.
 
     Args:
-        quantity (int): cantidad total de códigos.
-        prefix (str): prefijo solicitado.
+        cantidad (int): cantidad total de códigos.
+        prefijo (str): prefijo solicitado.
         progress_callback (callable | None): función para comunicar
             el progreso.
 
     Returns:
         listcódigos únicos generados.
     """
-    validated_quantity = validate_quantity(quantity)
-    validated_prefix = validate_prefix(prefix)
+    validated_quantity = validar_cantidad(cantidad)
+    validated_prefix = validar_prefijo(prefijo)
 
-    generated_numbers = []
-    last_timestamp = None
+    numeros_generados = []
+    ultimo_timestamp = None
 
     for index in range(validated_quantity):
-        unique_number, current_timestamp = generate_unique_number(
-            prefix=validated_prefix,
-            last_timestamp=last_timestamp,
+        unique_number, timestamp_actual = generar_numero_unico(
+            prefijo=validated_prefix,
+            ultimo_timestamp=ultimo_timestamp,
         )
 
-        generated_numbers.append(unique_number)
-        last_timestamp = current_timestamp
+        numeros_generados.append(unique_number)
+        ultimo_timestamp = timestamp_actual
 
-        generated_count = index + 1
+        cantidad_generada = index + 1
 
         # Evita enviar miles de actualizaciones innecesarias
         # a la interfaz gráfica.
         if progress_callback is not None:
             if (
-                generated_count % PROGRESS_UPDATE_INTERVAL == 0
-                or generated_count == validated_quantity
+                cantidad_generada % PROGRESS_UPDATE_INTERVAL == 0
+                or cantidad_generada == validated_quantity
             ):
                 progress_callback(
-                    generated_count,
+                    cantidad_generada,
                     validated_quantity,
                 )
 
-    return generated_numbers
+    return numeros_generados
 
 
-def verify_no_duplicates(unique_numbers):
+def verificar_sin_duplicados(unique_numbers):
     """
     Comprueba que no existan duplicados en el lote completo.
 
@@ -243,15 +243,15 @@ def verify_no_duplicates(unique_numbers):
     Raises:
         RuntimeError: si se encuentra algún código duplicado.
     """
-    total_codes = len(unique_numbers)
-    total_unique_codes = len(set(unique_numbers))
+    total_codigos = len(unique_numbers)
+    total_codigos_unicos = len(set(unique_numbers))
 
-    if total_codes != total_unique_codes:
-        duplicated_count = total_codes - total_unique_codes
+    if total_codigos != total_codigos_unicos:
+        cantidad_duplicados = total_codigos - total_codigos_unicos
 
         raise RuntimeError(
             "Se han detectado códigos duplicados.\n\n"
-            f"Duplicados encontrados: {duplicated_count}\n\n"
+            f"Duplicados encontrados: {cantidad_duplicados}\n\n"
             "No se ha generado ningún archivo."
         )
 
@@ -260,7 +260,7 @@ def verify_no_duplicates(unique_numbers):
 # DIVISIÓN EN BLOQUES
 # ============================================================
 
-def split_into_batches(
+def dividir_en_lotes(
     unique_numbers,
     batch_size=MAX_CODES_PER_FILE,
 ):
@@ -293,7 +293,7 @@ def split_into_batches(
 # NOMBRES DE ARCHIVO
 # ============================================================
 
-def build_base_file_name(prefix, quantity):
+def construir_nombre_base_archivo(prefijo, cantidad):
     """
     Construye el nombre base del lote.
 
@@ -301,8 +301,8 @@ def build_base_file_name(prefix, quantity):
         codigos_FCB_10100_20260918_094530
 
     Args: 
-        prefix (str): prefijo del lote.
-        quantity (int): cantidad total solicitada.
+        prefijo (str): prefijo del lote.
+        cantidad (int): cantidad total solicitada.
 
     Returns:
         str: nombre base.
@@ -312,11 +312,11 @@ def build_base_file_name(prefix, quantity):
     )
 
     return (
-        f"codigos_{prefix}_{quantity}_{generation_date}"
+        f"codigos_{prefijo}_{cantidad}_{generation_date}"
     )
 
 
-def build_part_file_name(
+def construir_nombre_archivo_parte(
     base_name,
     part_number,
     total_parts,
@@ -352,9 +352,9 @@ def build_part_file_name(
 # EXPORTACIÓN A TXT
 # ============================================================
 
-def save_as_txt_batches(
+def guardar_lotes_txt(
     unique_numbers,
-    output_directory,
+    directorio_salida,
     base_name,
 ):
     """
@@ -364,48 +364,48 @@ def save_as_txt_batches(
 
     Args:
         unique_numbers (list[str]): códigos generados.
-        output_directory (str | Path): carpeta de destino.
+        directorio_salida (str | Path): carpeta de destino.
         base_name (str): nombre base del lote.
 
     Returns:
         listarchivos creados.
     """
-    destination = Path(output_directory)
+    destination = Path(directorio_salida)
     destination.mkdir(parents=True, exist_ok=True)
 
-    batches = split_into_batches(unique_numbers)
+    batches = dividir_en_lotes(unique_numbers)
     total_parts = len(batches)
-    generated_files = []
+    archivos_generados = []
 
     for part_number, batch in enumerate(batches, start=1):
-        file_name = build_part_file_name(
+        nombre_archivo = construir_nombre_archivo_parte(
             base_name=base_name,
             part_number=part_number,
             total_parts=total_parts,
             extension="txt",
         )
 
-        file_path = destination / file_name
+        ruta_archivo = destination / nombre_archivo
 
-        with file_path.open(
+        with ruta_archivo.open(
             mode="w",
             encoding="utf-8",
-        ) as output_file:
-            output_file.write("\n".join(batch))
-            output_file.write("\n")
+        ) as archivo_salida:
+            archivo_salida.write("\n".join(batch))
+            archivo_salida.write("\n")
 
-        generated_files.append(file_path)
+        archivos_generados.append(ruta_archivo)
 
-    return generated_files
+    return archivos_generados
 
 
 # ============================================================
 # EXPORTACIÓN A EXCEL
 # ============================================================
 
-def save_as_excel_batches(
+def guardar_lotes_excel(
     unique_numbers,
-    output_directory,
+    directorio_salida,
     base_name,
 ):
     """
@@ -416,7 +416,7 @@ def save_as_excel_batches(
 
     Args:
         unique_numbers (list[str]): códigos generados.
-        output_directory (str | Path): carpeta de destino.
+        directorio_salida (str | Path): carpeta de destino.
         base_name (str): nombre base del lote.
 
     Returns:
@@ -435,40 +435,40 @@ def save_as_excel_batches(
             "python -m pip install openpyxl"
         ) from error
 
-    destination = Path(output_directory)
+    destination = Path(directorio_salida)
     destination.mkdir(parents=True, exist_ok=True)
 
-    batches = split_into_batches(unique_numbers)
+    batches = dividir_en_lotes(unique_numbers)
     total_parts = len(batches)
-    generated_files = []
+    archivos_generados = []
 
     for part_number, batch in enumerate(batches, start=1):
-        file_name = build_part_file_name(
+        nombre_archivo = construir_nombre_archivo_parte(
             base_name=base_name,
             part_number=part_number,
             total_parts=total_parts,
             extension="xlsx",
         )
 
-        file_path = destination / file_name
+        ruta_archivo = destination / nombre_archivo
 
-        workbook = Workbook()
-        worksheet = workbook.active
-        worksheet.title = "Códigos únicos"
+        libro_trabajo = Workbook()
+        hoja_trabajo = libro_trabajo.active
+        hoja_trabajo.title = "Códigos únicos"
 
         # Encabezado
-        worksheet["A1"] = "CODIGO"
-        worksheet["A1"].font = Font(bold=True)
-        worksheet.column_dimensions["A"].width = 35
-        worksheet.freeze_panes = "A2"
+        hoja_trabajo["A1"] = "CODIGO"
+        hoja_trabajo["A1"].font = Font(bold=True)
+        hoja_trabajo.column_dimensions["A"].width = 35
+        hoja_trabajo.freeze_panes = "A2"
 
         # Contenido
-        for row_number, unique_number in enumerate(
+        for numero_fila, unique_number in enumerate(
             batch,
             start=2,
         ):
-            cell = worksheet.cell(
-                row=row_number,
+            cell = hoja_trabajo.cell(
+                row=numero_fila,
                 column=1,
                 value=unique_number,
             )
@@ -477,19 +477,19 @@ def save_as_excel_batches(
             # Excel modifique los valores largos.
             cell.number_format = "@"
 
-        workbook.save(file_path)
-        workbook.close()
+        libro_trabajo.save(ruta_archivo)
+        libro_trabajo.close()
 
-        generated_files.append(file_path)
+        archivos_generados.append(ruta_archivo)
 
-    return generated_files
+    return archivos_generados
 
 
 # ============================================================
 # INTERFAZ GRÁFICA
 # ============================================================
 
-class UniqueCodeGeneratorApp:
+class GeneradorCodigosUnicosApp:
     """Interfaz gráfica del generador de códigos únicos."""
 
     def __init__(self, root):
@@ -499,38 +499,38 @@ class UniqueCodeGeneratorApp:
         self.root.geometry(WINDOW_SIZE)
         self.root.resizable(False, False)
 
-        self.prefix_variable = tk.StringVar()
-        self.quantity_variable = tk.StringVar(value="5050")
-        self.format_variable = tk.StringVar(value="txt")
+        self.variable_prefijo = tk.StringVar()
+        self.variable_cantidad = tk.StringVar(value="5050")
+        self.variable_formato = tk.StringVar(value="txt")
 
-        self.status_variable = tk.StringVar(
+        self.variable_estado = tk.StringVar(
             value="Introduce el prefijo y la cantidad."
         )
 
-        self.files_variable = tk.StringVar(
+        self.variable_archivos = tk.StringVar(
             value="Archivos previstos: 1"
         )
 
-        self.generation_in_progress = False
-        self.message_queue = queue.Queue()
+        self.generacion_en_progreso = False
+        self.cola_mensajes = queue.Queue()
 
-        self.configure_styles()
-        self.create_widgets()
-        self.configure_events()
+        self.configurar_estilos()
+        self.crear_widgets()
+        self.configurar_eventos()
 
         # Revisa periódicamente los mensajes enviados
         # por el hilo de generación.
-        self.root.after(50, self.process_thread_messages)
+        self.root.after(50, self.procesar_mensajes_hilo)
 
-    def configure_styles(self):
+    def configurar_estilos(self):
         """Configura los estilos visuales."""
         style = ttk.Style()
 
-        available_themes = style.theme_names()
+        temas_disponibles = style.theme_names()
 
-        if "vista" in available_themes:
+        if "vista" in temas_disponibles:
             style.theme_use("vista")
-        elif "clam" in available_themes:
+        elif "clam" in temas_disponibles:
             style.theme_use("clam")
 
         style.configure(
@@ -556,26 +556,26 @@ class UniqueCodeGeneratorApp:
             padding=9,
         )
 
-    def create_widgets(self):
+    def crear_widgets(self):
         """Crea todos los elementos de la ventana."""
-        main_frame = ttk.Frame(
+        marco_principal = ttk.Frame(
             self.root,
             padding=25,
         )
-        main_frame.pack(
+        marco_principal.pack(
             fill="both",
             expand=True,
         )
 
-        title_label = ttk.Label(
-            main_frame,
+        etiqueta_titulo = ttk.Label(
+            marco_principal,
             text="Generador de códigos únicos",
             style="Title.TLabel",
         )
-        title_label.pack(pady=(0, 5))
+        etiqueta_titulo.pack(pady=(0, 5))
 
-        subtitle_label = ttk.Label(
-            main_frame,
+        etiqueta_subtitulo = ttk.Label(
+            marco_principal,
             text=(
                 "PREFIJO + año, mes, día, hora, minutos, "
                 "segundos y milisegundos"
@@ -584,16 +584,16 @@ class UniqueCodeGeneratorApp:
             wraplength=510,
             justify="center",
         )
-        subtitle_label.pack(pady=(0, 25))
+        etiqueta_subtitulo.pack(pady=(0, 25))
 
-        form_frame = ttk.Frame(main_frame)
-        form_frame.pack(fill="x")
+        marco_formulario = ttk.Frame(marco_principal)
+        marco_formulario.pack(fill="x")
 
-        prefix_label = ttk.Label(
-            form_frame,
+        etiqueta_prefijo = ttk.Label(
+            marco_formulario,
             text="Prefijo:",
         )
-        prefix_label.grid(
+        etiqueta_prefijo.grid(
             row=0,
             column=0,
             sticky="w",
@@ -601,23 +601,23 @@ class UniqueCodeGeneratorApp:
             pady=8,
         )
 
-        self.prefix_entry = ttk.Entry(
-            form_frame,
-            textvariable=self.prefix_variable,
+        self.campo_prefijo = ttk.Entry(
+            marco_formulario,
+            textvariable=self.variable_prefijo,
             width=35,
         )
-        self.prefix_entry.grid(
+        self.campo_prefijo.grid(
             row=0,
             column=1,
             sticky="ew",
             pady=8,
         )
 
-        quantity_label = ttk.Label(
-            form_frame,
+        etiqueta_cantidad = ttk.Label(
+            marco_formulario,
             text="Cantidad:",
         )
-        quantity_label.grid(
+        etiqueta_cantidad.grid(
             row=1,
             column=0,
             sticky="w",
@@ -625,23 +625,23 @@ class UniqueCodeGeneratorApp:
             pady=8,
         )
 
-        self.quantity_entry = ttk.Entry(
-            form_frame,
-            textvariable=self.quantity_variable,
+        self.campo_cantidad = ttk.Entry(
+            marco_formulario,
+            textvariable=self.variable_cantidad,
             width=35,
         )
-        self.quantity_entry.grid(
+        self.campo_cantidad.grid(
             row=1,
             column=1,
             sticky="ew",
             pady=8,
         )
 
-        format_label = ttk.Label(
-            form_frame,
+        etiqueta_formato = ttk.Label(
+            marco_formulario,
             text="Formato:",
         )
-        format_label.grid(
+        etiqueta_formato.grid(
             row=2,
             column=0,
             sticky="w",
@@ -649,7 +649,7 @@ class UniqueCodeGeneratorApp:
             pady=8,
         )
 
-        format_frame = ttk.Frame(form_frame)
+        format_frame = ttk.Frame(marco_formulario)
         format_frame.grid(
             row=2,
             column=1,
@@ -657,81 +657,81 @@ class UniqueCodeGeneratorApp:
             pady=8,
         )
 
-        self.txt_radio_button = ttk.Radiobutton(
+        self.boton_radio_txt = ttk.Radiobutton(
             format_frame,
             text="Archivo TXT",
-            variable=self.format_variable,
+            variable=self.variable_formato,
             value="txt",
         )
-        self.txt_radio_button.pack(
+        self.boton_radio_txt.pack(
             side="left",
             padx=(0, 20),
         )
 
-        self.excel_radio_button = ttk.Radiobutton(
+        self.boton_radio_excel = ttk.Radiobutton(
             format_frame,
             text="Archivo Excel",
-            variable=self.format_variable,
+            variable=self.variable_formato,
             value="xlsx",
         )
-        self.excel_radio_button.pack(side="left")
+        self.boton_radio_excel.pack(side="left")
 
-        form_frame.columnconfigure(1, weight=1)
+        marco_formulario.columnconfigure(1, weight=1)
 
-        limit_label = ttk.Label(
-            main_frame,
+        etiqueta_limite = ttk.Label(
+            marco_principal,
             text=(
                 "Cada archivo contendrá un máximo de "
                 f"{MAX_CODES_PER_FILE:,} códigos."
             ).replace(",", "."),
             style="Information.TLabel",
         )
-        limit_label.pack(pady=(15, 3))
+        etiqueta_limite.pack(pady=(15, 3))
 
-        files_label = ttk.Label(
-            main_frame,
-            textvariable=self.files_variable,
+        etiqueta_archivos = ttk.Label(
+            marco_principal,
+            textvariable=self.variable_archivos,
             style="Information.TLabel",
         )
-        files_label.pack(pady=(0, 12))
+        etiqueta_archivos.pack(pady=(0, 12))
 
-        self.progress_bar = ttk.Progressbar(
-            main_frame,
+        self.barra_progreso = ttk.Progressbar(
+            marco_principal,
             orient="horizontal",
             mode="determinate",
             maximum=100,
         )
-        self.progress_bar.pack(
+        self.barra_progreso.pack(
             fill="x",
             pady=(8, 8),
         )
 
-        self.status_label = ttk.Label(
-            main_frame,
-            textvariable=self.status_variable,
+        self.etiqueta_estado = ttk.Label(
+            marco_principal,
+            textvariable=self.variable_estado,
             anchor="center",
             wraplength=510,
         )
-        self.status_label.pack(
+        self.etiqueta_estado.pack(
             fill="x",
             pady=(0, 20),
         )
 
-        self.generate_button = ttk.Button(
-            main_frame,
+        self.boton_generar = ttk.Button(
+            marco_principal,
             text="Generar códigos",
             command=self.start_generation,
             style="Generate.TButton",
         )
-        self.generate_button.pack(fill="x")
+        self.boton_generar.pack(fill="x")
 
-        self.prefix_entry.focus_set()
+        self.campo_prefijo.focus_set()
 
-    def configure_events(self):
+    def configurar_eventos(self):
         """Configura los eventos de la interfaz."""
-        self.quantity_variable.trace_add(
+        self.variable_cantidad.trace_add(
             "write",
-            self.update_expected_file_count,
+            self.actualizar_cantidad_archivos_esperados,
         )
 
         self.root.bind(
@@ -741,69 +741,69 @@ class UniqueCodeGeneratorApp:
 
         self.root.protocol(
             "WM_DELETE_WINDOW",
-            self.close_application,
+            self.cerrar_aplicacion,
         )
 
-    def update_expected_file_count(self, *args):
+    def actualizar_cantidad_archivos_esperados(self, *args):
         """Actualiza el número previsto de archivos."""
-        quantity_text = self.quantity_variable.get().strip()
+        texto_cantidad = self.variable_cantidad.get().strip()
 
         try:
-            quantity = int(quantity_text)
+            cantidad = int(texto_cantidad)
 
-            if quantity <= 0:
+            if cantidad <= 0:
                 raise ValueError
 
             total_files = math.ceil(
-                quantity / MAX_CODES_PER_FILE
+                cantidad / MAX_CODES_PER_FILE
             )
 
-            self.files_variable.set(
+            self.variable_archivos.set(
                 f"Archivos previstos: {total_files}"
             )
 
         except ValueError:
-            self.files_variable.set(
+            self.variable_archivos.set(
                 "Archivos previstos: -"
             )
 
-    def get_form_data(self):
+    def obtener_datos_formulario(self):
         """
         Obtiene y valida los valores del formulario.
 
         Returns:
             tuple[str, int, str]: prefijo, cantidad y formato.
         """
-        prefix = validate_prefix(
-            self.prefix_variable.get()
+        prefijo = validar_prefijo(
+            self.variable_prefijo.get()
         )
 
-        quantity_text = self.quantity_variable.get().strip()
+        texto_cantidad = self.variable_cantidad.get().strip()
 
-        if not quantity_text:
+        if not texto_cantidad:
             raise ValueError(
                 "Debes introducir una cantidad."
             )
 
         try:
-            quantity = int(quantity_text)
+            cantidad = int(texto_cantidad)
         except ValueError as error:
             raise ValueError(
                 "La cantidad debe ser un número entero."
             ) from error
 
-        quantity = validate_quantity(quantity)
+        cantidad = validar_cantidad(cantidad)
 
-        output_format = self.format_variable.get()
+        formato_salida = self.variable_formato.get()
 
-        if output_format not in ("txt", "xlsx"):
+        if formato_salida not in ("txt", "xlsx"):
             raise ValueError(
                 "Debes seleccionar un formato de salida."
             )
 
-        return prefix, quantity, output_format
+        return prefijo, cantidad, formato_salida
 
-    def ask_output_directory(self):
+    def solicitar_directorio_salida(self):
         """Solicita la carpeta de destino."""
         return filedialog.askdirectory(
             title="Selecciona la carpeta de destino"
@@ -811,12 +811,12 @@ class UniqueCodeGeneratorApp:
 
     def start_generation(self):
         """Inicia la generación de códigos."""
-        if self.generation_in_progress:
+        if self.generacion_en_progreso:
             return
 
         try:
-            prefix, quantity, output_format = (
-                self.get_form_data()
+            prefijo, cantidad, formato_salida = (
+                self.obtener_datos_formulario()
             )
         except ValueError as error:
             messagebox.showerror(
@@ -825,65 +825,65 @@ class UniqueCodeGeneratorApp:
             )
             return
 
-        output_directory = self.ask_output_directory()
+        directorio_salida = self.solicitar_directorio_salida()
 
-        if not output_directory:
-            self.status_variable.set(
+        if not directorio_salida:
+            self.variable_estado.set(
                 "Generación cancelada."
             )
             return
 
         total_files = math.ceil(
-            quantity / MAX_CODES_PER_FILE
+            cantidad / MAX_CODES_PER_FILE
         )
 
-        self.generation_in_progress = True
-        self.set_interface_enabled(False)
+        self.generacion_en_progreso = True
+        self.configurar_interfaz_habilitada(False)
 
-        self.progress_bar["value"] = 0
+        self.barra_progreso["value"] = 0
 
-        self.status_variable.set(
-            f"Generando 0 de {quantity} códigos. "
+        self.variable_estado.set(
+            f"Generando 0 de {cantidad} códigos. "
             f"Se crearán {total_files} archivo(s)."
         )
 
         generation_thread = threading.Thread(
-            target=self.generate_and_save,
+            target=self.generar_y_guardar,
             args=(
-                prefix,
-                quantity,
-                output_format,
-                output_directory,
+                prefijo,
+                cantidad,
+                formato_salida,
+                directorio_salida,
             ),
             daemon=True,
         )
 
         generation_thread.start()
 
-    def notify_progress(self, current, total):
+    def notificar_progreso(self, actual, total):
         """
         Envía el progreso desde el hilo secundario.
 
         Args:
-            current (int): códigos generados.
+            actual (int): códigos generados.
             total (int): cantidad total.
         """
-        self.message_queue.put(
+        self.cola_mensajes.put(
             (
                 "progress",
                 {
-                    "current": current,
+                    "actual": actual,
                     "total": total,
                 },
             )
         )
 
-    def generate_and_save(
+    def generar_y_guardar(
         self,
-        prefix,
-        quantity,
-        output_format,
-        output_directory,
+        prefijo,
+        cantidad,
+        formato_salida,
+        directorio_salida,
     ):
         """
         Genera, comprueba y guarda los códigos.
@@ -891,82 +891,82 @@ class UniqueCodeGeneratorApp:
         Este método se ejecuta en un hilo secundario.
         """
         try:
-            generated_numbers = generate_unique_numbers(
-                quantity=quantity,
-                prefix=prefix,
-                progress_callback=self.notify_progress,
+            numeros_generados = generar_numeros_unicos(
+                cantidad=cantidad,
+                prefijo=prefijo,
+                progress_callback=self.notificar_progreso,
             )
 
             # Se comprueba el lote completo antes de dividirlo.
-            verify_no_duplicates(generated_numbers)
+            verificar_sin_duplicados(numeros_generados)
 
-            base_name = build_base_file_name(
-                prefix=prefix,
-                quantity=quantity,
+            base_name = construir_nombre_base_archivo(
+                prefijo=prefijo,
+                cantidad=cantidad,
             )
 
-            if output_format == "txt":
-                generated_files = save_as_txt_batches(
-                    unique_numbers=generated_numbers,
-                    output_directory=output_directory,
+            if formato_salida == "txt":
+                archivos_generados = guardar_lotes_txt(
+                    unique_numbers=numeros_generados,
+                    directorio_salida=directorio_salida,
                     base_name=base_name,
                 )
             else:
-                generated_files = save_as_excel_batches(
-                    unique_numbers=generated_numbers,
-                    output_directory=output_directory,
+                archivos_generados = guardar_lotes_excel(
+                    unique_numbers=numeros_generados,
+                    directorio_salida=directorio_salida,
                     base_name=base_name,
                 )
 
-            self.message_queue.put(
+            self.cola_mensajes.put(
                 (
                     "completed",
                     {
-                        "generated_numbers": generated_numbers,
-                        "generated_files": generated_files,
+                        "numeros_generados": numeros_generados,
+                        "archivos_generados": archivos_generados,
                     },
                 )
             )
 
         except Exception as error:
-            self.message_queue.put(
+            self.cola_mensajes.put(
                 (
                     "error",
                     {
-                        "message": str(error),
+                        "mensaje": str(error),
                     },
                 )
             )
 
-    def process_thread_messages(self):
+    def procesar_mensajes_hilo(self):
         """
         Procesa mensajes del hilo secundario de forma segura.
         """
         try:
             while True:
-                message_type, message_data = (
-                    self.message_queue.get_nowait()
+                tipo_mensaje, datos_mensaje = (
+                    self.cola_mensajes.get_nowait()
                 )
 
-                if message_type == "progress":
-                    self.update_progress(
-                        current=message_data["current"],
-                        total=message_data["total"],
+                if tipo_mensaje == "progress":
+                    self.actualizar_progreso(
+                        actual=datos_mensaje["actual"],
+                        total=datos_mensaje["total"],
                     )
 
-                elif message_type == "completed":
-                    self.generation_completed(
-                        generated_numbers=message_data[
-                            "generated_numbers"
+                elif tipo_mensaje == "completed":
+                    self.generacion_completada(
+                        numeros_generados=datos_mensaje[
+                            "numeros_generados"
                         ],
-                        generated_files=message_data[
-                            "generated_files"
+                        archivos_generados=datos_mensaje[
+                            "archivos_generados"
                         ],
                     )
 
-                elif message_type == "error":
-                    self.generation_failed(
-                        message_data["message"]
+                elif tipo_mensaje == "error":
+                    self.generacion_fallida(
+                        datos_mensaje["mensaje"]
                     )
 
         except queue.Empty:
@@ -975,90 +975,90 @@ class UniqueCodeGeneratorApp:
         if self.root.winfo_exists():
             self.root.after(
                 50,
-                self.process_thread_messages,
+                self.procesar_mensajes_hilo,
             )
 
-    def update_progress(self, current, total):
+    def actualizar_progreso(self, actual, total):
         """Actualiza la barra de progreso."""
-        percentage = (current / total) * 100
+        percentage = (actual / total) * 100
 
-        self.progress_bar["value"] = percentage
+        self.barra_progreso["value"] = percentage
 
-        self.status_variable.set(
-            f"Generando {current} de {total} códigos..."
+        self.variable_estado.set(
+            f"Generando {actual} de {total} códigos..."
         )
 
-    def generation_completed(
+    def generacion_completada(
         self,
-        generated_numbers,
-        generated_files,
+        numeros_generados,
+        archivos_generados,
     ):
         """Muestra el resumen final."""
-        self.generation_in_progress = False
-        self.set_interface_enabled(True)
+        self.generacion_en_progreso = False
+        self.configurar_interfaz_habilitada(True)
 
-        self.progress_bar["value"] = 100
+        self.barra_progreso["value"] = 100
 
-        total_codes = len(generated_numbers)
-        total_files = len(generated_files)
+        total_codigos = len(numeros_generados)
+        total_files = len(archivos_generados)
 
-        first_code = generated_numbers[0]
-        last_code = generated_numbers[-1]
+        first_code = numeros_generados[0]
+        last_code = numeros_generados[-1]
 
-        file_names = "\n".join(
-            file_path.name
-            for file_path in generated_files
+        nombres_archivos = "\n".join(
+            ruta_archivo.name
+            for ruta_archivo in archivos_generados
         )
 
-        destination_directory = (
-            generated_files[0].parent
+        directorio_destino = (
+            archivos_generados[0].padre
         )
 
-        self.status_variable.set(
-            f"Completado: {total_codes} códigos "
+        self.variable_estado.set(
+            f"Completado: {total_codigos} códigos "
             f"en {total_files} archivo(s)."
         )
 
         messagebox.showinfo(
             "Generación completada",
             (
-                f"Códigos generados: {total_codes}\n"
+                f"Códigos generados: {total_codigos}\n"
                 f"Archivos creados: {total_files}\n\n"
                 f"Primer código:\n{first_code}\n\n"
                 f"Último código:\n{last_code}\n\n"
                 f"Carpeta de destino:\n"
-                f"{destination_directory}\n\n"
-                f"Archivos generados:\n{file_names}"
+                f"{directorio_destino}\n\n"
+                f"Archivos generados:\n{nombres_archivos}"
             ),
         )
 
-    def generation_failed(self, error_message):
+    def generacion_fallida(self, mensaje_error):
         """Muestra los errores de generación o guardado."""
-        self.generation_in_progress = False
-        self.set_interface_enabled(True)
+        self.generacion_en_progreso = False
+        self.configurar_interfaz_habilitada(True)
 
-        self.status_variable.set(
+        self.variable_estado.set(
             "Se produjo un error durante la generación."
         )
 
         messagebox.showerror(
             "Error",
-            error_message,
+            mensaje_error,
         )
 
-    def set_interface_enabled(self, enabled):
+    def configurar_interfaz_habilitada(self, enabled):
         """Activa o desactiva los controles."""
         state = "normal" if enabled else "disabled"
 
-        self.prefix_entry.configure(state=state)
-        self.quantity_entry.configure(state=state)
-        self.txt_radio_button.configure(state=state)
-        self.excel_radio_button.configure(state=state)
-        self.generate_button.configure(state=state)
+        self.campo_prefijo.configure(state=state)
+        self.campo_cantidad.configure(state=state)
+        self.boton_radio_txt.configure(state=state)
+        self.boton_radio_excel.configure(state=state)
+        self.boton_generar.configure(state=state)
 
-    def close_application(self):
+    def cerrar_aplicacion(self):
         """Gestiona el cierre de la aplicación."""
-        if self.generation_in_progress:
+        if self.generacion_en_progreso:
             should_close = messagebox.askyesno(
                 "Generación en curso",
                 (
@@ -1077,12 +1077,12 @@ class UniqueCodeGeneratorApp:
 # INICIO DE LA APLICACIÓN
 # ============================================================
 
-def main():
+def principal():
     """Inicia la interfaz gráfica."""
     root = tk.Tk()
-    UniqueCodeGeneratorApp(root)
+    GeneradorCodigosUnicosApp(root)
     root.mainloop()
 
 
 if __name__ == "__main__":
-    main()
+    principal()
